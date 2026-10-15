@@ -10,6 +10,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  ChevronLeft,
   Clock,
   Compass,
   FileText,
@@ -31,6 +32,26 @@ import {
   Bookmark,
 } from "lucide-react";
 import { StudentSafeAssignmentPayload } from "@/lib/assignments/access";
+
+function renderHighlightedText(text: string) {
+  if (!text) return null;
+  // Splits text by markdown bold **keyword**
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      const keyword = part.slice(2, -2);
+      return (
+        <mark
+          key={index}
+          className="bg-[#DCFCE7] text-[#14532D] font-bold px-1.5 py-0.5 rounded-md border border-[#86EFAC] shadow-2xs mx-0.5 inline-block"
+        >
+          {keyword}
+        </mark>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
 
 interface Props {
   assignment: {
@@ -61,6 +82,7 @@ export default function StudentSolverClient({ assignment }: Props) {
   const [descriptiveAnswers, setDescriptiveAnswers] = useState<Record<string, string>>({});
   const [revealedHints, setRevealedHints] = useState<Record<string, boolean>>({});
   const [autosaveStatus, setAutosaveStatus] = useState<"saved" | "saving" | "error" | "idle">("idle");
+  const [activeSectionIndex, setActiveSectionIndex] = useState(0);
 
   // Step 3: Tab Switch Anti-Cheat Telemetry
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
@@ -181,8 +203,22 @@ export default function StudentSolverClient({ assignment }: Props) {
     );
 
     if (unanswered.length > 0) {
+      const firstUnanswered = unanswered[0];
+      const targetIndex =
+        caseData.story_acts && caseData.story_acts.length > 0
+          ? caseData.story_acts.findIndex(
+              (act) =>
+                act.related_question_id === firstUnanswered.id ||
+                act.act_number === firstUnanswered.question_number
+            )
+          : caseData.questions.findIndex((q) => q.id === firstUnanswered.id);
+
+      if (targetIndex >= 0) {
+        setActiveSectionIndex(targetIndex);
+      }
+
       setErrorMsg(
-        `Please provide descriptive answers for all questions before submitting (Challenge #${unanswered[0].question_number} is incomplete).`
+        `Please provide a descriptive answer for Section #${firstUnanswered.question_number} before submitting.`
       );
       return;
     }
@@ -390,8 +426,20 @@ export default function StudentSolverClient({ assignment }: Props) {
 
   // -------------------------------------------------------------
   // VIEW 3: ACTIVE MURDLE-STYLE MULTI-ACT READING & SOLVING PANE
-  // -------------------------------------------------------------
   const storyActs = caseData?.story_acts || [];
+  const totalSections = storyActs.length > 0 ? storyActs.length : (caseData?.questions?.length || 1);
+  const safeSectionIndex = Math.min(Math.max(0, activeSectionIndex), Math.max(0, totalSections - 1));
+
+  const currentAct = storyActs.length > 0 ? storyActs[safeSectionIndex] : null;
+  const currentQuestion = storyActs.length > 0
+    ? (caseData?.questions.find(
+        (q) => q.id === currentAct?.related_question_id || q.question_number === currentAct?.act_number
+      ) || caseData?.questions[safeSectionIndex])
+    : caseData?.questions[safeSectionIndex];
+
+  const qId = currentQuestion?.id || `q_${safeSectionIndex + 1}`;
+  const currentAnswer = descriptiveAnswers[qId] || "";
+  const wordCount = currentAnswer.trim() ? currentAnswer.trim().split(/\s+/).length : 0;
 
   return (
     <div className="min-h-screen bg-[#FAFBF8] pb-24">
@@ -459,14 +507,14 @@ export default function StudentSolverClient({ assignment }: Props) {
       )}
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 space-y-8">
-        {/* CASE PROLOGUE & PREMISE */}
-        <div className="bg-white rounded-3xl border border-[#E4E9E3] p-6 sm:p-8 shadow-xs space-y-4">
+        {/* STORY OVERVIEW BANNER */}
+        <div className="bg-white rounded-3xl border border-[#E4E9E3] p-6 sm:p-8 shadow-xs space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-[#287A52] px-2.5 py-1 rounded-full bg-[#EBF4EE]">
-              {caseData?.case_number || "CASE-101"} • {caseData?.subject || assignment.subject}
+            <span className="text-[11px] font-bold uppercase tracking-wider text-[#287A52] px-3 py-1 rounded-full bg-[#EBF4EE]">
+              Topic: {caseData?.subject || assignment.subject}
             </span>
             <span className="text-xs text-[#68736B]">
-              Role: <strong>{caseData?.investigative_role || "Lead Investigator"}</strong>
+              Student: <strong>{studentName}</strong>
             </span>
           </div>
 
@@ -477,196 +525,211 @@ export default function StudentSolverClient({ assignment }: Props) {
           <div className="p-4 rounded-2xl bg-[#FAFBF8] border border-[#E4E9E3] text-xs sm:text-sm text-[#202722] leading-relaxed">
             {caseData?.narrative_premise || assignment.description}
           </div>
+        </div>        {/* ONE QUESTION PER SECTION CONTAINER */}
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* SECTION NAVIGATION TABS */}
+          <div className="bg-white rounded-2xl border border-[#E4E9E3] p-2 shadow-xs">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+              {Array.from({ length: totalSections }).map((_, idx) => {
+                const act = storyActs[idx];
+                const q = storyActs.length > 0
+                  ? (caseData?.questions.find(
+                      (item) => item.id === act?.related_question_id || item.question_number === act?.act_number
+                    ) || caseData?.questions[idx])
+                  : caseData?.questions[idx];
+                const thisQId = q?.id || `q_${idx + 1}`;
+                const isAnswered = Boolean(descriptiveAnswers[thisQId] && descriptiveAnswers[thisQId].trim().length >= 15);
+                const isActive = safeSectionIndex === idx;
 
-          {caseData?.setting_context && (
-            <p className="text-xs text-[#68736B]">
-              <strong>Setting & Environment:</strong> {caseData.setting_context}
-            </p>
-          )}
-        </div>
-
-        {/* PROGRESSIVE MURDLE ACTS & EMBEDDED BRIEFS */}
-        <form onSubmit={handleSubmit} className="space-y-10">
-          {storyActs.length > 0 ? (
-            storyActs.map((act) => {
-              // Find the question matching this act
-              const pairedQuestion = caseData?.questions.find(
-                (q) => q.id === act.related_question_id || q.question_number === act.act_number
-              );
-              const qId = pairedQuestion?.id || `q_${act.act_number}`;
-              const currentAnswer = descriptiveAnswers[qId] || "";
-              const wordCount = currentAnswer.trim() ? currentAnswer.trim().split(/\s+/).length : 0;
-
-              return (
-                <div
-                  key={act.act_number}
-                  className="bg-white rounded-3xl border border-[#E4E9E3] p-6 sm:p-8 shadow-xs space-y-6"
-                >
-                  {/* Act Header */}
-                  <div className="flex items-center justify-between border-b border-[#E4E9E3] pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-[#153D2E] text-white text-xs font-bold flex items-center justify-center">
-                        {act.act_number}
-                      </span>
-                      <h2 className="text-base sm:text-lg font-bold text-[#153D2E]">
-                        {act.title}
-                      </h2>
-                    </div>
-
-                    <span className="text-[11px] font-semibold text-[#68736B] uppercase tracking-wider">
-                      Narrative Section {act.act_number}
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveSectionIndex(idx)}
+                    className={`flex-1 min-w-[120px] py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 border ${
+                      isActive
+                        ? "bg-[#153D2E] text-white border-[#153D2E] shadow-xs"
+                        : "bg-[#FAFBF8] text-[#153D2E] border-[#E4E9E3] hover:bg-[#F3F6F3]"
+                    }`}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                        isActive
+                          ? "bg-[#287A52] text-white"
+                          : isAnswered
+                          ? "bg-[#EBF4EE] text-[#166534]"
+                          : "bg-white text-[#68736B] border border-[#E4E9E3]"
+                      }`}
+                    >
+                      {isAnswered ? <Check className="w-3 h-3 text-[#166534]" /> : idx + 1}
                     </span>
-                  </div>
+                    <span className="truncate">Section {idx + 1}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                  {/* Substantive Story Paragraphs */}
-                  <div className="space-y-4 text-xs sm:text-sm text-[#202722] leading-relaxed">
-                    {act.paragraphs.map((p, pIdx) => (
-                      <p key={pIdx} className="indent-2 sm:indent-4">
-                        {p}
-                      </p>
-                    ))}
-                  </div>
-
-                  {/* MURDLE DEDUCTION BRIEF & HINT */}
-                  <div className="p-4 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] text-xs space-y-1">
-                    <div className="flex items-center gap-2 text-[#92400E] font-bold">
-                      <Lightbulb className="w-4 h-4 text-[#D97706]" />
-                      <span>Quick Clue & Key Takeaway</span>
-                    </div>
-                    <p className="text-[#78350F] leading-relaxed">
-                      {act.section_brief}
-                    </p>
-                  </div>
-
-                  {/* UNLOCKED CLUE CARD WITH SIMPLE ANALOGY */}
-                  {act.unlocked_clue && (
-                    <div className="p-4 sm:p-5 rounded-2xl bg-[#FAFBF8] border border-[#287A52]/30 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#EBF4EE] text-[#153D2E]">
-                          Unlocked Clue: {act.unlocked_clue.name}
-                        </span>
-                        {act.unlocked_clue.is_anomaly && (
-                          <span className="text-[10px] font-bold text-[#DC2626] flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3" />
-                            <span>Surprise Clue</span>
-                          </span>
-                        )}
-                      </div>
-
-                      <p className="text-xs font-semibold text-[#153D2E]">
-                        {act.unlocked_clue.highlight_evidence}
-                      </p>
-
-                      {/* Intuitive Everyday Analogy */}
-                      {act.unlocked_clue.analogy_explanation && (
-                        <div className="p-3 rounded-xl bg-white border border-[#E4E9E3] text-xs text-[#68736B] flex items-start gap-2.5">
-                          <Sparkles className="w-4 h-4 text-[#287A52] shrink-0 mt-0.5" />
-                          <div>
-                            <strong className="text-[#153D2E]">Everyday Analogy:</strong>{" "}
-                            {act.unlocked_clue.analogy_explanation}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* PAIRED DESCRIPTIVE INQUIRY */}
-                  {pairedQuestion && (
-                    <div className="mt-6 pt-6 border-t border-[#E4E9E3] space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#153D2E] flex items-center gap-2">
-                          <Scale className="w-4 h-4 text-[#287A52]" />
-                          <span>Question #{pairedQuestion.question_number}</span>
-                        </span>
-                        <span className="text-xs font-bold text-[#287A52] px-2.5 py-0.5 rounded-full bg-[#EBF4EE]">
-                          {pairedQuestion.max_marks || 25} Marks
-                        </span>
-                      </div>
-
-                      <h3 className="text-sm font-bold text-[#153D2E]">
-                        {pairedQuestion.title}
-                      </h3>
-
-                      <div className="p-4 rounded-xl bg-[#FAFBF8] border border-[#E4E9E3] text-xs sm:text-sm text-[#202722] leading-relaxed">
-                        {pairedQuestion.question_text}
-                      </div>
-
-                      {/* Graduated Hint Toggle */}
-                      {pairedQuestion.graduated_hints && pairedQuestion.graduated_hints.length > 0 && (
-                        <div>
-                          {!revealedHints[qId] ? (
-                            <button
-                              type="button"
-                              onClick={() => setRevealedHints((prev) => ({ ...prev, [qId]: true }))}
-                              className="inline-flex items-center gap-1.5 text-xs text-[#287A52] hover:text-[#153D2E] font-semibold"
-                            >
-                              <HelpCircle className="w-3.5 h-3.5" />
-                              <span>Need guidance? Click to reveal hints</span>
-                            </button>
-                          ) : (
-                            <div className="p-3.5 rounded-xl bg-[#FFFBEB] border border-[#FDE68A] text-xs space-y-1">
-                              <span className="font-bold text-[#92400E] block">Hint Ladder:</span>
-                              {pairedQuestion.graduated_hints.map((h, hIdx) => (
-                                <p key={hIdx} className="text-[#78350F]">
-                                  <strong>Tier {h.tier}:</strong> {h.hint_text}
-                                </p>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Written Response Textarea */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-[11px] text-[#68736B]">
-                          <span>Your Written Analysis & Justification:</span>
-                          <span>{wordCount} words</span>
-                        </div>
-
-                        <textarea
-                          rows={5}
-                          required
-                          value={currentAnswer}
-                          onChange={(e) => handleAnswerChange(qId, e.target.value)}
-                          placeholder="Explain the mechanism and cite specific observations and analogies from this Act..."
-                          className="w-full p-4 rounded-2xl border border-[#E4E9E3] bg-[#FAFBF8] text-xs sm:text-sm text-[#202722] focus:bg-white focus:border-[#287A52] outline-none transition-colors leading-relaxed"
-                        />
-                      </div>
-                    </div>
-                  )}
+          {/* ACTIVE SECTION CONTENT - ONLY ONE QUESTION */}
+          <div className="bg-white rounded-3xl border border-[#E4E9E3] p-6 sm:p-10 shadow-xs space-y-8">
+            {/* Section Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E4E9E3] pb-4">
+              <div className="flex items-center gap-3">
+                <span className="w-8 h-8 rounded-xl bg-[#153D2E] text-white text-sm font-bold flex items-center justify-center shadow-xs">
+                  {safeSectionIndex + 1}
+                </span>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-[#153D2E]">
+                    {currentAct?.title || currentQuestion?.title || `Section ${safeSectionIndex + 1}`}
+                  </h2>
+                  <span className="text-[11px] font-semibold text-[#68736B]">
+                    Section {safeSectionIndex + 1} of {totalSections} • 1 Question in this Section
+                  </span>
                 </div>
-              );
-            })
-          ) : (
-            // Fallback for legacy assignments without story_acts
-            caseData?.questions?.map((q, idx) => {
-              const currentAnswer = descriptiveAnswers[q.id] || "";
-              const wordCount = currentAnswer.trim() ? currentAnswer.trim().split(/\s+/).length : 0;
-              return (
-                <div
-                  key={q.id || idx}
-                  className="bg-white rounded-3xl border border-[#E4E9E3] p-6 sm:p-8 shadow-xs space-y-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#153D2E]">Challenge #{q.question_number}</span>
-                    <span className="text-xs font-bold text-[#287A52]">{q.max_marks || 25} Marks</span>
+              </div>
+
+              {currentQuestion && (
+                <span className="text-xs font-bold text-[#287A52] px-3 py-1 rounded-full bg-[#EBF4EE] border border-[#BBF7D0]">
+                  {currentQuestion.max_marks || 25} Marks
+                </span>
+              )}
+            </div>
+
+            {/* BIG PASSAGE WITH KEYWORDS HIGHLIGHTED IN GREEN */}
+            {currentAct?.paragraphs && currentAct.paragraphs.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#153D2E]">
+                  <BookOpen className="w-4 h-4 text-[#287A52]" />
+                  <span>Case Reading Passage (Key Terms in Green)</span>
+                </div>
+                <div className="p-6 sm:p-8 rounded-2xl bg-[#FAFBF8] border border-[#E4E9E3] space-y-5 text-base sm:text-lg text-[#202722] leading-relaxed">
+                  {currentAct.paragraphs.map((p, pIdx) => (
+                    <p key={pIdx} className="leading-relaxed">
+                      {renderHighlightedText(p)}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {/* HELPFUL CLUE & HINT (DIRECTLY ABOVE THE QUESTION) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] space-y-2 text-xs sm:text-sm">
+              <div className="flex items-center gap-2 text-[#92400E] font-bold">
+                <Lightbulb className="w-4 h-4 text-[#D97706]" />
+                <span>Helpful Clue & Hint</span>
+              </div>
+              <p className="text-[#78350F] leading-relaxed">
+                {renderHighlightedText(
+                  currentAct?.section_brief ||
+                  currentAct?.unlocked_clue?.highlight_evidence ||
+                  currentQuestion?.graduated_hints?.[0]?.hint_text ||
+                  "Review the story passage above to find the key explanation."
+                )}
+              </p>
+              {currentAct?.unlocked_clue?.analogy_explanation && (
+                <div className="pt-2 border-t border-[#FDE68A]/70 text-[#92400E] text-xs leading-relaxed flex items-start gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D97706] shrink-0 mt-0.5" />
+                  <span>
+                    <strong>Everyday Example:</strong> {renderHighlightedText(currentAct.unlocked_clue.analogy_explanation)}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* ONLY ONE QUESTION APPEARS HERE IN THIS SECTION */}
+            {currentQuestion ? (
+              <div className="pt-6 border-t border-[#E4E9E3] space-y-5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#153D2E] flex items-center gap-2">
+                    <Scale className="w-4 h-4 text-[#287A52]" />
+                    <span>Question #{currentQuestion.question_number}</span>
+                  </span>
+                  <span className="text-xs font-bold text-[#287A52]">
+                    Challenge {safeSectionIndex + 1} of {totalSections}
+                  </span>
+                </div>
+
+                <h3 className="text-base sm:text-lg font-bold text-[#153D2E]">
+                  {currentQuestion.title}
+                </h3>
+
+                <div className="p-5 rounded-2xl bg-[#FAFBF8] border border-[#E4E9E3] text-sm sm:text-base text-[#202722] leading-relaxed font-medium">
+                  {currentQuestion.question_text}
+                </div>
+
+                {/* Written Response Textarea */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs text-[#68736B]">
+                    <span className="font-semibold text-[#153D2E]">
+                      Your Written Explanation & Justification:
+                    </span>
+                    <span>{wordCount} words</span>
                   </div>
-                  <h3 className="text-sm font-bold text-[#153D2E]">{q.title}</h3>
-                  <p className="text-xs text-[#202722] p-4 rounded-xl bg-[#FAFBF8] border border-[#E4E9E3]">
-                    {q.question_text}
-                  </p>
+
                   <textarea
-                    rows={5}
+                    rows={6}
                     required
                     value={currentAnswer}
-                    onChange={(e) => handleAnswerChange(q.id, e.target.value)}
-                    placeholder="Write your explanation here..."
-                    className="w-full p-4 rounded-xl border border-[#E4E9E3] text-xs"
+                    onChange={(e) => handleAnswerChange(qId, e.target.value)}
+                    placeholder="Write your descriptive answer here. Explain what happened, cite the clues above, and use the everyday analogy..."
+                    className="w-full p-4 sm:p-5 rounded-2xl border border-[#E4E9E3] bg-[#FAFBF8] text-sm sm:text-base text-[#202722] focus:bg-white focus:border-[#287A52] outline-none transition-colors leading-relaxed shadow-inner"
                   />
                 </div>
-              );
-            })
-          )}
+              </div>
+            ) : null}
+
+            {/* SECTION PAGINATION & CONTROLS */}
+            <div className="pt-6 border-t border-[#E4E9E3] flex flex-col sm:flex-row items-center justify-between gap-4">
+              <button
+                type="button"
+                disabled={safeSectionIndex === 0}
+                onClick={() => {
+                  setActiveSectionIndex((prev) => Math.max(0, prev - 1));
+                  window.scrollTo({ top: 300, behavior: "smooth" });
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-xs font-bold border border-[#E4E9E3] bg-[#FAFBF8] text-[#153D2E] hover:bg-[#F3F6F3] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                <span>Previous Section</span>
+              </button>
+
+              <div className="text-xs font-bold text-[#68736B]">
+                Section {safeSectionIndex + 1} of {totalSections}
+              </div>
+
+              {safeSectionIndex < totalSections - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveSectionIndex((prev) => Math.min(totalSections - 1, prev + 1));
+                    window.scrollTo({ top: 300, behavior: "smooth" });
+                  }}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-bold bg-[#153D2E] text-white hover:bg-[#1C523E] transition-colors shadow-xs"
+                >
+                  <span>Next Section</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-xs font-bold text-white bg-[#153D2E] hover:bg-[#1C523E] transition-all shadow-xs disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-[#2EE6A8]" />
+                      <span>Evaluating Written Answers...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 text-[#2EE6A8]" />
+                      <span>Finalize & Submit Investigation</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
 
           {errorMsg && (
             <div className="p-4 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-xs flex items-center gap-2">
@@ -675,30 +738,22 @@ export default function StudentSolverClient({ assignment }: Props) {
             </div>
           )}
 
-          {/* Finalize Action */}
-          <div className="p-6 rounded-3xl bg-white border border-[#E4E9E3] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-[#68736B]">
-              Review your written explanations before submitting. Once finalized, your responses are evaluated against the rubric.
-            </p>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl text-xs font-bold text-white bg-[#153D2E] hover:bg-[#1C523E] transition-all shadow-xs disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin text-[#2EE6A8]" />
-                  <span>Evaluating Written Answers...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 text-[#2EE6A8]" />
-                  <span>Finalize & Submit Investigation</span>
-                </>
-              )}
-            </button>
-          </div>
+          {/* Quick Submit Access if all completed */}
+          {safeSectionIndex < totalSections - 1 && (
+            <div className="p-5 rounded-2xl bg-white border border-[#E4E9E3] shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-xs text-[#68736B]">
+                You can move freely across sections using the tabs above. Once ready, you can submit your investigation.
+              </p>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-xs font-bold text-[#153D2E] bg-[#EBF4EE] hover:bg-[#DCEBDD] border border-[#BBF7D0] transition-colors disabled:opacity-50"
+              >
+                <Send className="w-4 h-4 text-[#287A52]" />
+                <span>Submit All Answers</span>
+              </button>
+            </div>
+          )}
         </form>
       </main>
     </div>

@@ -36,52 +36,34 @@ export async function generateDescriptiveMystery(
     try {
       const ai = new GoogleGenAI({ apiKey });
 
-      const prompt = `You are a creative educational mystery author inspired by Murdle.com and engaging popular science stories.
-Your mission is to create a FRIENDLY, INTUITIVE, and EXCITING deduction mystery for students studying "${subject}".
-The assignment title is "${assignmentTitle}".
+      const prompt = `You are a talented educational storyteller.
+Create a SIMPLE, RELATABLE, and ENGAGING educational story for students learning "${subject}".
+The assignment topic is "${assignmentTitle}".
 The difficulty level is "${difficulty}".
 
-INVARIANT CURRICULUM FACTS (Every deduction must strictly stem from these verified truths):
-${approvedFacts.map((f, i) => `[Fact ${f.id}] (${f.fact_type}) ${f.statement} (Objective: "${f.learning_objective}")`).join("\n")}
+IMPORTANT: KEEP IT A SIMPLE STORY (NOT A COMPLEX PUZZLE):
+- Do NOT generate complex forensic puzzles, multi-suspect logic grids, trick deduction grids, or convoluted forensics.
+- Write a warm, relatable, and realistic story that students genuinely enjoy reading (e.g. students Maya and Leo working on an exciting practical project in ${subject}).
+- Use clear, friendly, vivid language. Strictly avoid heavy jargon.
 
-CRITICAL REQUIREMENTS FROM USER FEEDBACK:
-1. FRIENDLY, SELF-EXPLANATORY TITLE:
-   - The title MUST be simple, friendly, and immediately tell the student what topic they are learning!
-   - Format: "The Mystery of the [Relatable Everyday Scenario]: A [Subject/Topic] Investigation"
-   - Examples:
-     * "The Mystery of the Wilting Sunflowers: A Photosynthesis Investigation"
-     * "The Mystery of the Runaway Go-Kart: A Forces & Motion Investigation"
-     * "The Mystery of the Exhausted Marathon Runner: A Cellular Energy Investigation"
-     * "The Case of the Fizzing Flask: A Chemical Reactions Investigation"
-     * "The Mystery of the Quiet Lake: An Ecosystems & Food Web Investigation"
-   - AVOID abstract or obscure titles like "Case 402: Transduction Kinetics" or "The Photolytic Anomaly".
+KEY REQUIREMENTS:
+1. 3 TO 4 CLEAR STORY CHAPTERS:
+   - Part 1: "Part 1: A Promising Start" (Setting up the project, how things normally work).
+   - Part 2: "Part 2: An Unexpected Discovery" (Something changes or a challenge appears).
+   - Part 3: "Part 3: Finding the Real Cause" (Testing ideas and understanding the science).
+   - Part 4: "Part 4: Solving the Challenge" (Putting the solution in place and seeing the healthy result).
 
-2. FRIENDLY, ENGAGING STORY THAT PEOPLE ACTUALLY ENJOY READING:
-   - Make it a realistic, relatable story with student detectives or friendly investigators (e.g. Leo and Maya, or a curious school science club).
-   - Set it in a familiar place: a school science greenhouse, a community garden, a lakeside camp, a home workshop, or a nature reserve.
-   - NO HEAVY JARGON: Strictly avoid phrases like "transduction kinetics", "endogenous modulation", "allosteric cleft", "dessication", or "telemetry perturbations".
-   - Instead, write in warm, clear, vivid, storybook English that is a pleasure to read! Explain scientific concepts simply when they appear.
+2. SUBSTANTIAL PASSAGES WITH KEYWORDS HIGHLIGHTED IN GREEN:
+   - Provide generous, descriptive, easy-to-read story paragraphs (the passage can be big and rich with descriptive details!).
+   - Wrap necessary keywords, core concepts, and key findings in double asterisks, e.g. **${subject}**, **photosynthesis**, **temperature**, **soil moisture**, so they render highlighted in green.
 
-3. 4-ACT PROGRESSIVE MURDLE FLOW:
-   - Divide into 4 sequential chapters:
-     * Act 1: "Act 1: A Promising Start" (Setting up the situation, what is expected, initial observations).
-     * Act 2: "Act 2: An Unexpected Puzzle" (Something goes wrong or changes unexpectedly; two characters debate different ideas).
-     * Act 3: "Act 3: Searching for Clues" (Examining the evidence closely, testing ideas, finding the real surprise).
-     * Act 4: "Act 4: Cracking the Case" (Testing the solution, fixing the issue, seeing the healthy result).
-   - In EACH Act:
-     * Provide 2 to 3 substantive, easy-to-read narrative paragraphs.
-     * "section_brief": A friendly, simple 1-2 sentence hint: "Quick Clue: [Simple takeaway explaining what happened]".
-     * "unlocked_clue": Name, type, simple evidence finding, and an intuitive everyday analogy ("Think of it like...").
-     * Directly paired descriptive question.
+3. SIMPLE HELPFUL HINT ABOVE EACH QUESTION:
+   - "section_brief": A friendly 1-sentence hint guiding the student (e.g. "Hint: Notice how both sunlight and moisture worked together in this step.").
+   - "unlocked_clue": Name, observation detail, and a simple everyday analogy ("Think of it like...").
 
-4. MAKE QUESTIONS REALLY SIMPLE AND EASY TO UNDERSTAND:
-   - Questions MUST be straightforward, friendly, and easy to read.
-   - Do NOT ask convoluted multi-clause academic questions.
-   - Keep them 100% open-ended and descriptive (NO multiple-choice, NO checkboxes, NO one-word answers), but written in simple conversational English:
-     * Question 1 (Concept): "In Act 1, the experiment was going great. But what other essential ingredient was needed? Explain how the two factors work together."
-     * Question 2 (Comparing Ideas): "Leo thought one thing happened, while Maya thought another. Look at Clue 2. Which person was right, and what clue proves it?"
-     * Question 3 (Cause & Effect): "Why did this reaction happen when conditions changed? Using the everyday analogy in Clue 3, explain how this protected the system."
-     * Question 4 (Application): "Once the team fixed the problem in Act 4, how did things recover? What does this teach us about how living systems stay healthy?"
+4. REALLY SIMPLE AND CLEAR QUESTIONS:
+   - 1 simple, clear question per section asking the student to explain the mechanism or lesson in their own words based on the story.
+   - Simple conversational English without convoluted multi-clause questions.
 
 Respond strictly with valid JSON conforming to this schema:
 {
@@ -237,16 +219,16 @@ function generateDeterministicMurdleCase(
       act_number: 1,
       title: "Act 1: A Promising Start in the Greenhouse",
       paragraphs: [
-        `On Monday morning, middle school science partners Maya and Leo walked into the sunny school greenhouse to begin their class science project on ${subject}. The tables were lined with vibrant green potted sunflower seedlings, basking under full-spectrum grow lights that simulated bright summer sunshine. The room felt warm, humid, and full of life.`,
-        `Maya took out her notebook to record their baseline measurements. Every leaf looked crisp and green, and the seedlings were actively growing. "Look at Table Alpha and Table Beta," Leo remarked, adjusting the light timer. "Both tables have the exact same soil, the exact same temperature at 22°C, and identical grow lights. Everything is in perfect balance!"`,
+        `On Monday morning, middle school science partners Maya and Leo walked into the sunny school greenhouse to begin their class science project on **${subject}**. The tables were lined with **vibrant green potted sunflower seedlings**, basking under **full-spectrum grow lights** that simulated bright summer sunshine. The room felt warm, humid, and full of life.`,
+        `Maya took out her notebook to record their baseline measurements. Every leaf looked crisp and green, and the seedlings were actively growing. "Look at **Table Alpha and Table Beta**," Leo remarked, adjusting the light timer. "Both tables have the exact same soil, the exact same temperature at **22°C**, and identical grow lights. Everything is in **perfect balance**!"`,
       ],
       section_brief:
-        "Quick Clue: Under bright lights and warm air, both sets of plants started off healthy and growing quickly, showing that their basic systems were working perfectly.",
+        "Quick Clue: Under **bright lights** and **warm air**, both sets of plants started off healthy and growing quickly, showing that their basic systems were working perfectly.",
       unlocked_clue: {
         id: "clue_1",
         name: "Morning Lab Notebook: Healthy Baseline",
         type: "observation_log",
-        highlight_evidence: `Baseline verified: ${fact1} Both Table Alpha and Table Beta showed healthy green leaves and active growth under bright lights.`,
+        highlight_evidence: `Baseline verified: ${fact1} Both **Table Alpha** and **Table Beta** showed healthy green leaves and active growth under bright lights.`,
         analogy_explanation:
           "Think of cars cruising down a clear highway on a sunny morning: when the road is open and tanks are full of fuel, everything moves smoothly at steady speed.",
         is_anomaly: false,
@@ -257,16 +239,16 @@ function generateDeterministicMurdleCase(
       act_number: 2,
       title: "Act 2: The Mystery of the Drooping Leaves",
       paragraphs: [
-        `By Wednesday afternoon, something strange had happened. While the plants on Table Alpha were still standing tall and proud, the plants on Table Beta looked sad and droopy. Their leaves hung limp, and their stems were bending toward the table.`,
-        `Maya and Leo rushed over to investigate. "Did somebody turn off the lights?" Leo wondered aloud. But the overhead grow lights above Table Beta were shining just as brightly as always. Leo guessed that hungry greenhouse beetles had chewed through the stems. But Maya leaned in with a magnifying glass and noticed something different: the stems were completely intact, but the leaves looked shrunken and tightly shut.`,
+        `By Wednesday afternoon, something strange had happened. While the plants on **Table Alpha** were still standing tall and proud, the plants on **Table Beta** looked sad and droopy. Their leaves hung limp, and their stems were bending toward the table.`,
+        `Maya and Leo rushed over to investigate. "Did somebody turn off the lights?" Leo wondered aloud. But the **overhead grow lights** above Table Beta were shining just as brightly as always. Leo guessed that hungry greenhouse beetles had chewed through the stems. But Maya leaned in with a magnifying glass and noticed something different: the stems were **completely intact**, but the leaf openings were **clamped tightly shut**.`,
       ],
       section_brief:
-        "Quick Clue: Even though Table Beta had the exact same bright light, the plants started drooping. Light alone wasn't enough to keep them healthy!",
+        "Quick Clue: Even though Table Beta had the exact same **bright light**, the plants started drooping. Light alone was not enough to keep them healthy!",
       unlocked_clue: {
         id: "clue_2",
         name: "Magnifying Lens Inspection: Shrunken Leaves",
         type: "specimen_sample",
-        highlight_evidence: `Leaf inspection reveals: ${fact2} No insects or bite marks were found; instead, tiny leaf openings were clamped shut.`,
+        highlight_evidence: `Leaf inspection reveals: ${fact2} No insects or bite marks were found; instead, **tiny leaf openings were clamped shut**.`,
         analogy_explanation:
           "Think of rolling down storm shutters during a storm: the house shuts its windows tight to keep warmth and moisture from escaping.",
         is_anomaly: true,
@@ -277,16 +259,16 @@ function generateDeterministicMurdleCase(
       act_number: 3,
       title: "Act 3: Searching for the Hidden Cause",
       paragraphs: [
-        `Determined to solve the puzzle, Maya checked the soil moisture meter. When she pressed the probe into Table Alpha's pots, the needle pointed to 'Optimal Moisture'. But when she poked it into Table Beta, the needle plummeted to zero—the soil was bone dry!`,
-        `Looking up, Leo spotted the culprit: a small ventilation window right above Table Beta had been left cracked open, blowing a steady stream of dry, chilly air straight across the pots. Because the dry air was pulling moisture out of the leaves faster than normal, the plants had triggered a natural survival reflex, clamping their leaf pores shut so they wouldn't dry out completely.`,
+        `Determined to solve the puzzle, Maya checked the **soil moisture meter**. When she pressed the probe into Table Alpha's pots, the needle pointed to **'Optimal Moisture'**. But when she poked it into Table Beta, the needle plummeted to zero—the soil was **bone dry**!`,
+        `Looking up, Leo spotted the culprit: a small **ventilation window** right above Table Beta had been left cracked open, blowing a steady stream of **dry, chilly air** straight across the pots. Because the dry air was pulling moisture out of the leaves faster than normal, the plants had triggered a **natural survival reflex**, clamping their **leaf pores shut** so they would not dry out completely.`,
       ],
       section_brief:
-        "Quick Clue: The dry air draft dried out the soil. The plants closed their tiny leaf openings to save whatever water was left inside them.",
+        "Quick Clue: The **dry air draft** dried out the soil. The plants **closed their tiny leaf pores** to save whatever water was left inside them.",
       unlocked_clue: {
         id: "clue_3",
         name: "Moisture Meter Reading & Draft Alert",
         type: "observation_log",
-        highlight_evidence: `Draft inspection confirms: ${fact3} Dry breeze dropped soil moisture to near zero, triggering the plant's natural protective closure.`,
+        highlight_evidence: `Draft inspection confirms: ${fact3} Dry breeze dropped soil moisture to **near zero**, triggering the plant's natural protective closure.`,
         analogy_explanation:
           "Think of a runner on a hot summer day: when you run out of water, your body stops sweating and you have to rest so you don't overheat.",
         is_anomaly: true,
@@ -297,16 +279,16 @@ function generateDeterministicMurdleCase(
       act_number: 4,
       title: "Act 4: Cracking the Case and Saving the Plants",
       paragraphs: [
-        `With the real cause uncovered, Maya and Leo sprang into action. Leo latched the drafty window tightly shut to stop the dry breeze, while Maya carefully watered each pot on Table Beta with room-temperature water.`,
-        `They sat back to watch what happened. Within just two hours, the dry soil soaked up the moisture, the roots absorbed the water, and the leaves opened their tiny pores again. By late afternoon, Table Beta's sunflowers stood tall, green, and healthy once more. The mystery was solved: the plants weren't sick—they had simply protected themselves until they got the water they needed!`,
+        `With the real cause uncovered, Maya and Leo sprang into action. Leo **latched the drafty window tightly shut** to stop the dry breeze, while Maya carefully watered each pot on Table Beta with **room-temperature water**.`,
+        `They sat back to watch what happened. Within just two hours, the dry soil **soaked up the moisture**, the roots absorbed the water, and the leaves **reopened their tiny pores**. By late afternoon, Table Beta's sunflowers stood tall, green, and healthy once more. The mystery was solved: the plants weren't sick—they had simply protected themselves until they got the **water they needed**!`,
       ],
       section_brief:
-        "Quick Clue: As soon as the water was replenished and the draft was stopped, the plants opened their leaf pores and bounced right back to life.",
+        "Quick Clue: As soon as the **water was replenished** and the draft was stopped, the plants **reopened their leaf pores** and bounced right back to life.",
       unlocked_clue: {
         id: "clue_4",
         name: "Recovery Log: Fresh Standing Leaves",
         type: "field_test",
-        highlight_evidence: `Follow-up verification: ${fact4} Seedlings fully regained their upright posture within 2 hours of watering and closing the draft.`,
+        highlight_evidence: `Follow-up verification: ${fact4} Seedlings **fully regained their upright posture** within 2 hours of watering and closing the draft.`,
         analogy_explanation:
           "Think of watering a dry, flat kitchen sponge: the moment it touches water, it springs right back into its soft, full shape!",
         is_anomaly: false,

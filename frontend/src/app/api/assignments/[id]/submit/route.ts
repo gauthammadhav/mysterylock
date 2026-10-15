@@ -55,7 +55,7 @@ export async function POST(
     });
 
     // Insert into public.submissions with full telemetry
-    const { data: submission, error } = await supabase
+    let { data: submission, error } = await supabase
       .from("submissions")
       .insert({
         assignment_id: assignmentId,
@@ -75,6 +75,31 @@ export async function POST(
       })
       .select()
       .single();
+
+    if (error && (error as any).code === "22P02") {
+      const fallback = await supabase
+        .from("submissions")
+        .insert({
+          assignment_id: assignmentId,
+          student_name: studentName.trim(),
+          student_id_code: studentIdCode ? studentIdCode.trim() : null,
+          student_email: studentEmail ? studentEmail.trim() : null,
+          story_title: storyTitle || "Assignment Story",
+          story_text: storyText || "",
+          answers,
+          score: Math.round(evaluation.overall_score),
+          feedback: evaluation.strengths.join(" • "),
+          tab_switch_count: tabSwitchCount,
+          tab_switch_logs: tabSwitchLogs,
+          time_spent_seconds: timeSpentSeconds,
+          photo_upload_url: photoUploadUrl,
+          ai_evaluations: [evaluation],
+        })
+        .select()
+        .single();
+      submission = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) {
       console.error("Submission insert error:", error);

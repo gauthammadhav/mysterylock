@@ -39,6 +39,25 @@ import {
 import { DescriptiveMysteryAssignment, DescriptiveQuestion } from "@/types/descriptive";
 import { ExtractedFact } from "@/types/facts";
 
+function renderHighlightedText(text: string) {
+  if (!text) return null;
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+      const keyword = part.slice(2, -2);
+      return (
+        <mark
+          key={index}
+          className="bg-[#DCFCE7] text-[#14532D] font-bold px-1.5 py-0.5 rounded-md border border-[#86EFAC] shadow-2xs mx-0.5 inline-block"
+        >
+          {keyword}
+        </mark>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
+
 interface Props {
   assignment: any;
   mystery: any;
@@ -390,7 +409,7 @@ export default function ReviewClientWrapper({
                     <div className="space-y-3 text-xs sm:text-sm text-[#202722] leading-relaxed break-words">
                       {act.paragraphs.map((para, pIdx) => (
                         <p key={pIdx} className="indent-2 sm:indent-3 break-words">
-                          {para}
+                          {renderHighlightedText(para)}
                         </p>
                       ))}
                     </div>
@@ -401,7 +420,7 @@ export default function ReviewClientWrapper({
                         <Lightbulb className="w-4 h-4 text-[#D97706] shrink-0" />
                         <span>Quick Clue & Key Takeaway</span>
                       </div>
-                      <p className="text-[#78350F] leading-relaxed break-words">{act.section_brief}</p>
+                      <p className="text-[#78350F] leading-relaxed break-words">{renderHighlightedText(act.section_brief)}</p>
                     </div>
 
                     {/* Unlocked Clue Card with Everyday Intuitive Analogy */}

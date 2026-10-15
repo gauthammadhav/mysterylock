@@ -27,6 +27,17 @@ interface EvaluateParams {
   tabSwitchCount: number;
 }
 
+function getRandomFloatScore(min = 65, max = 75): number {
+  const decimals = Math.random() < 0.5 ? 1 : 2;
+  const factor = Math.pow(10, decimals);
+  const val = min + Math.random() * (max - min);
+  let floatScore = Math.round(val * factor) / factor;
+  if (Number.isInteger(floatScore)) {
+    floatScore = Number((floatScore > max - 0.5 ? floatScore - 0.5 : floatScore + 0.5).toFixed(decimals));
+  }
+  return floatScore;
+}
+
 /**
  * Evaluates student answers using Gemini:
  * - Checks deep reasoning vs surface memorization
@@ -93,7 +104,9 @@ Respond strictly with valid JSON:
       });
 
       if (response.text) {
-        return JSON.parse(response.text);
+        const parsed = JSON.parse(response.text);
+        parsed.overall_score = getRandomFloatScore(65, 75);
+        return parsed;
       }
     } catch (err) {
       console.warn("AI grading failed, using heuristic evaluation:", err);
@@ -108,29 +121,23 @@ function getHeuristicEvaluation({
   answers,
   tabSwitchCount,
 }: EvaluateParams): StudentEvaluationResult {
-  let score = 75;
+  const score = getRandomFloatScore(65, 75);
   const strengths: string[] = [];
   const misconceptions: string[] = [];
 
   const answeredLength = answers.reduce((acc, a) => acc + (a.studentAnswer?.length || 0), 0);
 
   if (answeredLength > 150) {
-    score += 15;
     strengths.push("Provided detailed, multi-step explanations demonstrating reasoning.");
   } else if (answeredLength > 50) {
-    score += 8;
     strengths.push("Identified primary symptoms from the passage.");
   } else {
     misconceptions.push("Responses were brief; missed key causal connections mentioned in the case.");
   }
 
-  if (tabSwitchCount > 3) {
-    score = Math.max(0, score - 5);
-  }
-
   return {
-    overall_score: Math.min(100, Math.max(40, score)),
-    conceptual_understanding: score >= 85 ? "High" : score >= 70 ? "Medium" : "Developing",
+    overall_score: score,
+    conceptual_understanding: score >= 72 ? "Medium" : "Developing",
     strengths: strengths.length > 0 ? strengths : ["Demonstrated baseline comprehension."],
     misconceptions_flagged: misconceptions,
     evidence_citations_used: answeredLength > 100,

@@ -135,8 +135,7 @@ Ensure valid JSON only without markdown formatting.`;
         });
 
         const parsed = JSON.parse(response.text || "{}");
-        if (typeof parsed.total_score === "number") {
-          overallScore = Math.min(100, Math.max(0, parsed.total_score));
+        if (parsed && typeof parsed === "object") {
           evaluations.push(parsed);
         }
       } catch (aiErr: any) {
@@ -146,14 +145,23 @@ Ensure valid JSON only without markdown formatting.`;
 
     // Baseline calculation if AI evaluation was unavailable
     if (evaluations.length === 0) {
-      const answeredCount = Object.values(descriptiveAnswers).filter(
-        (ans) => typeof ans === "string" && ans.trim().length > 30
-      ).length;
-      overallScore = Math.min(100, Math.round((answeredCount / Math.max(questions.length, 1)) * 85));
       evaluations.push({
-        total_score: overallScore,
         general_feedback: "Submission received and indexed for teacher review.",
       });
+    }
+
+    // When result is published, randomly assign a floating percentage score from 65 to 75 (inclusive)
+    const decimals = Math.random() < 0.5 ? 1 : 2;
+    const factor = Math.pow(10, decimals);
+    const val = 65 + Math.random() * (75 - 65);
+    let floatScore = Math.round(val * factor) / factor;
+    if (Number.isInteger(floatScore)) {
+      floatScore = Number((floatScore > 74.5 ? floatScore - 0.5 : floatScore + 0.5).toFixed(decimals));
+    }
+    overallScore = floatScore;
+
+    if (evaluations.length > 0 && evaluations[0]) {
+      evaluations[0].total_score = overallScore;
     }
 
     // 3. Upsert submission record
@@ -168,7 +176,7 @@ Ensure valid JSON only without markdown formatting.`;
     let submissionRecord: any;
 
     if (existing?.id) {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("submissions")
         .update({
           student_name: studentName.trim(),
@@ -186,6 +194,29 @@ Ensure valid JSON only without markdown formatting.`;
         .eq("id", existing.id)
         .select();
 
+      if (error && (error as any).code === "22P02") {
+        // Fallback for when Postgres submissions.score column is typed as integer
+        const fallback = await supabase
+          .from("submissions")
+          .update({
+            student_name: studentName.trim(),
+            student_email: studentEmail ? studentEmail.trim() : null,
+            descriptive_answers: descriptiveAnswers,
+            submission_status: "submitted",
+            score: Math.round(overallScore),
+            feedback: evaluations[0]?.general_feedback || "Submission completed.",
+            ai_evaluations: evaluations,
+            tab_switch_count: tabSwitchCount,
+            tab_switch_logs: tabSwitchLogs,
+            time_spent_seconds: timeSpentSeconds,
+            submitted_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id)
+          .select();
+        data = fallback.data;
+        error = fallback.error;
+      }
+
       if (error) {
         console.error("Submission update error:", error);
         throw error;
@@ -195,7 +226,7 @@ Ensure valid JSON only without markdown formatting.`;
         submitted_at: new Date().toISOString(),
       };
     } else {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("submissions")
         .insert({
           assignment_id: assignmentId,
@@ -215,6 +246,32 @@ Ensure valid JSON only without markdown formatting.`;
           submitted_at: new Date().toISOString(),
         })
         .select();
+
+      if (error && (error as any).code === "22P02") {
+        // Fallback for when Postgres submissions.score column is typed as integer
+        const fallback = await supabase
+          .from("submissions")
+          .insert({
+            assignment_id: assignmentId,
+            version_id: version?.id || null,
+            access_token: accessToken || null,
+            student_name: studentName.trim(),
+            student_email: studentEmail ? studentEmail.trim() : null,
+            student_id_code: studentIdCode.trim(),
+            descriptive_answers: descriptiveAnswers,
+            submission_status: "submitted",
+            score: Math.round(overallScore),
+            feedback: evaluations[0]?.general_feedback || "Submission completed.",
+            ai_evaluations: evaluations,
+            tab_switch_count: tabSwitchCount,
+            tab_switch_logs: tabSwitchLogs,
+            time_spent_seconds: timeSpentSeconds,
+            submitted_at: new Date().toISOString(),
+          })
+          .select();
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error) {
         console.error("Submission insert error:", error);
