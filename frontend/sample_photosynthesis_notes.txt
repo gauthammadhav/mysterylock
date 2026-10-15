@@ -1,0 +1,28 @@
+# Biology 101: Cellular Energetics and Photosynthesis
+
+## Section 1: The Light-Dependent Reactions
+Photosynthesis is the biochemical process by which photoautotrophic organisms convert radiant solar energy into chemical energy. In eukaryotic autotrophs, the light-dependent reactions take place within the thylakoid membranes of chloroplasts.
+
+Chlorophyll a and accessory pigments (including chlorophyll b and carotenoids) absorb photons primarily within the blue (430-450 nm) and red (640-660 nm) absorption spectra, while reflecting green light. When a photon strikes a chlorophyll molecule in Photosystem II (PSII / P680), an electron is boosted to a higher energy orbital.
+
+Water photolysis occurs at the oxygen-evolving complex of Photosystem II, splitting H2O into protons (H+), electrons (e-), and diatomic oxygen (O2) as an environmental by-product according to the equation:
+2 H2O -> 4 H+ + 4 e- + O2.
+
+The excited electrons traverse an electron transport chain consisting of plastoquinone (PQ), the cytochrome b6f complex, and plastocyanin (PC). As electrons flow through cytochrome b6f, protons are actively translocated from the chloroplast stroma across the thylakoid membrane into the thylakoid lumen. This establishes a steep electrochemical proton gradient (proton-motive force).
+
+ATP synthase harnesses this proton-motive force as H+ ions diffuse back down their electrochemical gradient into the stroma, phosphorylating ADP into ATP via photophosphorylation. Simultaneously, Photosystem I (PSI / P700) re-energizes electrons via photon absorption, reducing NADP+ to NADPH via ferredoxin-NADP+ reductase (FNR).
+
+## Section 2: The Calvin-Benson Cycle (Light-Independent Reactions)
+The light-independent reactions take place in the stroma of the chloroplast. The cycle requires ATP and NADPH produced during the light reactions to synthesize high-energy triose phosphate sugars from atmospheric carbon dioxide (CO2).
+
+Phase 1: Carbon Fixation. Ribulose-1,5-bisphosphate carboxylase/oxygenase (RuBisCO) catalyzes the carboxylation of ribulose-1,5-bisphosphate (RuBP), a five-carbon sugar, with atmospheric CO2. This produces an unstable six-carbon intermediate that immediately cleaves into two molecules of 3-phosphoglycerate (3-PGA).
+
+Phase 2: Reduction. ATP and NADPH are consumed to reduce 3-PGA into glyceraldehyde-3-phosphate (G3P). For every three molecules of CO2 fixed, six molecules of G3P are formed, but only one net G3P exits the cycle to form glucose, sucrose, or starch.
+
+Phase 3: Regeneration. The remaining five G3P molecules undergo complex enzymatic rearrangement utilizing additional ATP to regenerate three molecules of RuBP, enabling the cycle to continue.
+
+## Section 3: Environmental Factors and Rate Limitations
+The rate of photosynthesis is governed by limiting factors according to Blackman's principle of limiting factors:
+1. Light Intensity and Quality: At low light levels, photochemical excitation is the rate-limiting step. Above the light saturation point, dark enzymatic reactions become limiting.
+2. Carbon Dioxide Concentration: CO2 availability directly dictates the carboxylation rate of RuBisCO. When stomata close due to water stress (mediated by abscisic acid), internal CO2 falls drastically, causing RuBisCO to undergo oxygenase activity (photorespiration), which decreases net sugar synthesis by up to 25-40%.
+3. Temperature: Moderate temperatures enhance RuBisCO kinetic activity. Elevated temperatures induce thermal denaturation of photosynthetic enzymes and destabilize thylakoid membrane integrity.
